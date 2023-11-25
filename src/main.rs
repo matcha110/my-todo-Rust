@@ -51,11 +51,28 @@ async fn root() -> &'static str {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::repositories::{CreateTodo, Todo};
+    use axum::response::Response;
     use axum::{
         body::Body,
-        http::Request,  
+        http::{header, Method, Request, StatusCode},  
     };
     use tower::ServiceExt;
+
+    fn build_todo_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
+        Request::builder<Body> {
+            Request::builder()
+                .uri(path)
+                .method(method)
+                .header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+                .body(Body::from(json_body))
+                .unwrap()
+        }
+
+        fn build_todo_req_with_empty(method: Method, path: &str) -> Request<Body>{
+            
+        }
+    }
 
     #[tokio::test]
     async fn should_return_hello_world() {

@@ -35,6 +35,13 @@ pub struct CreateTodo {
     text: String,
 }
 
+#[cfg(test)]
+impl CreateTodo {
+    pub fn new(text: String) -> Self {
+        Self { text }
+    }
+}
+
 // Option<T>型は 取得できないかもしれない値 を表現する列挙型であり、値が無いことを示すNoneとあることを示すSome(T)のどちらかをとる
 // cf, Result<T,E>は失敗するかもしれない処理の結果を表現する列挙型である。適切な使い分けが必要
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -93,6 +100,14 @@ impl TodoRepository for TodoRepositoryForMemory {
         // パフォーマンスを改善したい場合にはBOXを使用すると良い
     }
 
+    // Note: find() の実装に Box を使うパターン. clone の回数が増えるならヒープの利用を検討する
+    // fn find(&self, id: i32) -> Option<Box<Todo>> {
+    //     let store = self.read_store_ref();
+    //     let todo = store.get(&id);
+    //     let todo = Box::new(todo.clone());
+    //     Some(Todo)
+    // }
+    
     fn all(&self) -> Vec<Todo> {
         let store = self.read_store_ref();
         Vec::from_iter(store.values().map(|todo| todo.clone()))
@@ -111,8 +126,8 @@ impl TodoRepository for TodoRepositoryForMemory {
             text,
             completed,
         };
-    store.insert(id, todo.clone());
-    Ok(todo)
+        store.insert(id, todo.clone());
+        Ok(todo)
     }
 
     fn delete(&self, id: i32) -> anyhow::Result<()> {
@@ -175,4 +190,6 @@ mod test {
         let res = repository.delete(id);
         assert!(res.is_ok())
     }
+    
 }
+

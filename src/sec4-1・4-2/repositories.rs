@@ -1,5 +1,4 @@
 use validator::Validate;
-use axum::async_trait;
 use std:: {
     collections::HashMap,
     sync::{Arc, RwLock,RwLockReadGuard, RwLockWriteGuard},
@@ -16,13 +15,12 @@ enum RepositoryError {
     NotFound(i32),
 }
 
-#[async_trait]
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static{
-    async fn create(&self, payload: CreateTodo) -> anyhow::Result<Todo>;
-    async fn find(&self, id: i32) -> anyhow::Result<Todo>;
-    async fn all(&self) -> anyhow::Result<Vec<Todo>>;
-    async fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo>;
-    async fn delete(&self, id: i32) -> anyhow::Result<()>;
+    fn create(&self, payload: CreateTodo) -> Todo;
+    fn find(&self, id:i32) -> Option<Todo>;
+    fn all(&self) -> Vec<Todo>;
+    fn update(&self, id:i32, payload: UpdateTodo) -> anyhow::Result<Todo>;
+    fn delete(&self, id: i32) -> anyhow::Result<()>;
 }
 
 // Todoに必要な構造体を定義
@@ -92,24 +90,20 @@ impl TodoRepositoryForMemory {
 }
 
 
-#[async_trait]
+
 impl TodoRepository for TodoRepositoryForMemory {
-    async fn create(&self, payload: CreateTodo) -> anyhow::Result<Todo>{
+    fn create(&self, payload: CreateTodo) -> Todo {
         let mut store = self.write_store_ref();
         let id = (store.len() + 1) as i32; //as：型キャスト
         let todo = Todo::new(id, payload.text.clone());
         store.insert(id, todo.clone());
-        Ok(todo)
+        todo
     }
 
-    async fn find(&self, id: i32) -> anyhow::Result<Todo> {
+    fn find(&self, id: i32) -> Option<Todo> {
         let store = self.read_store_ref();
-        let todo = store
-            .get(&id)
-            .map(|todo| todo.clone())
-            .ok_or(Res)
-
-
+        store.get(&id).map(|todo| todo.clone()) //所有権を持っていないため戻り値にはCloneした値を設定
+        // パフォーマンスを改善したい場合にはBOXを使用すると良い
     }
 
     // Note: find() の実装に Box を使うパターン. clone の回数が増えるならヒープの利用を検討する

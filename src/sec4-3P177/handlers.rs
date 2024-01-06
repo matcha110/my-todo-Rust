@@ -1,15 +1,19 @@
 use axum::{
     async_trait,
-    extract::{Extension, FromRequest, Path, RequestParts},
+    extract::{Extension, Path, FromRequest, RequestParts},
     http::StatusCode,
     response::IntoResponse,
-    BoxError, Json,
+    BoxError, Json
 };
 use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use validator::Validate;
 
-use crate::repositories::{CreateTodo, TodoRepository, UpdateTodo};
+use crate::repositories::{
+    CreateTodo,
+    TodoRepository,
+    UpdateTodo,
+};
 
 #[derive(Debug)]
 pub struct ValidatedJson<T>(T);
@@ -81,8 +85,7 @@ pub async fn delete_todo<T: TodoRepository>(
     Path(id): Path<i32>,
     Extension(repository): Extension<Arc<T>>,
 ) -> impl IntoResponse {
-    repository
-        .delete(id)
+    repository.delete(id)
         .await
         .map(|_| StatusCode::NO_CONTENT)
         .unwrap_or(StatusCode::NOT_FOUND)

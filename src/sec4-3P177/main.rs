@@ -1,18 +1,27 @@
 mod handlers;
 mod repositories;
 
-use crate::repositories::{TodoRepository, TodoRepositoryForDb};
+use crate::repositories::{
+    TodoRepository, 
+    TodoRepositoryForMemory};
 
 use axum::{
     extract::Extension,
     routing::{get, post},
     Router,
 };
-use dotenv::dotenv;
-use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
-use sqlx::PgPool;
+use handlers::{
+    all_todo, 
+    create_todo,
+    delete_todo, 
+    find_todo,
+    update_todo
+};
 use std::net::SocketAddr;
-use std::{env, sync::Arc};
+use std:: {
+    env,
+    sync::Arc,
+};
 
 #[tokio::main]
 async fn main() {
@@ -20,15 +29,8 @@ async fn main() {
     let log_level = env::var("RUST_LOG").unwrap_or("info".to_string());
     env::set_var("RUST_LOG", log_level);
     tracing_subscriber::fmt::init();
-    dotenv().ok();
 
-    let database_url = env::var("DATABASE_URL").expect("undefined [DATABASE_URL]");
-    tracing::debug!("startconnect database...");
-    let pool = PgPool::connect(database_url.as_str())
-        .await
-        .expect(&format!("cannot connect to database: [{}]", database_url));
-    let repository = TodoRepositoryForDb::new(pool);
-
+    let repository = TodoRepositoryForMemory::new();
     let app = create_app(repository); // 関数に分離
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     // IPv4アドレス, ポート番号
@@ -61,11 +63,11 @@ async fn root() -> &'static str {
 mod test {
     // point: 1
     use super::*;
-    use crate::repositories::{test_utils::TodoRepositoryForMemory, CreateTodo, Todo};
+    use crate::repositories::{CreateTodo, Todo};
     use axum::response::Response;
     use axum::{
         body::Body,
-        http::{header, Method, Request, StatusCode},
+        http::{header, Method, Request, StatusCode}, 
     };
     // use serde::de::Expected;
     use tower::ServiceExt;
@@ -96,6 +98,7 @@ mod test {
             .expect(&format!("cannnot convert Todo instance. body:{}", body));
         todo
     }
+
 
     #[tokio::test]
     async fn should_return_hello_world() {
@@ -143,9 +146,9 @@ mod test {
 
         let repository = TodoRepositoryForMemory::new();
         repository
-            .create(CreateTodo::new("should_get_all_todos".to_string()))
-            .await
-            .expect("failed create todo");
+        .create(CreateTodo::new("should_get_all_todos".to_string()))
+        .await
+        .expect("failed create todo");        
         let req = build_todo_req_with_empty(Method::GET, "/todos");
         let res = create_app(repository).oneshot(req).await.unwrap();
         let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
@@ -161,34 +164,33 @@ mod test {
 
         let repository = TodoRepositoryForMemory::new();
         repository
-            .create(CreateTodo::new("before_update_todo".to_string()))
-            .await
-            .expect("failed create todo");
+        .create(CreateTodo::new("before_update_todo".to_string()))
+        .await
+        .expect("failed create todo");
         let req = build_todo_req_with_json(
             "/todos/1",
             Method::PATCH,
             r#"{
                 "text": "should_update_todo",
                 "completed": false
-            }"#
-            .to_string(),
+            }"#.to_string(),
         );
         let res = create_app(repository).oneshot(req).await.unwrap();
         let todo = res_to_todo(res).await;
-        assert_eq!(expected, todo);
+        assert_eq!(expected, todo); 
     }
 
     #[tokio::test]
     async fn should_delete_todo() {
         let repository = TodoRepositoryForMemory::new();
         repository
-            .create(CreateTodo::new("should_find_todo".to_string()))
-            .await
-            .expect("failed create todo");
+        .create(CreateTodo::new("should_find_todo".to_string()))
+        .await
+        .expect("failed create todo");
         let req = build_todo_req_with_empty(Method::DELETE, "/todos/1");
         let res = create_app(repository).oneshot(req).await.unwrap();
         assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
 }
 
-// 2023/1/7　~P183上部までOK
+// 2023/12/31　~P177上部までOK

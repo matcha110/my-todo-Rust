@@ -14,3 +14,8 @@ test:
 
 test-s:
 	cargo test --no-default-features
+
+exec:
+	docker-compose exec database bash
+
+# psql -U admin todos 

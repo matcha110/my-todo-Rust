@@ -4,4 +4,3 @@ CREATE TABLE todos
   text      TEXT NOT NULL,
   completed BOOLEAN NOT NULL DEFAULT false
 );
-

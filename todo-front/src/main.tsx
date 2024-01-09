@@ -10,4 +10,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-// P221までOK
+// §5-3 P226までOK

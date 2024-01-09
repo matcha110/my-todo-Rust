@@ -10,9 +10,12 @@ use axum::{
 };
 use dotenv::dotenv;
 use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
+use hyper::header::CONTENT_TYPE;
 use sqlx::PgPool;
 use std::net::SocketAddr;
 use std::{env, sync::Arc};
+use tower_http::cors::{Any, CorsLayer, Origin};
+
 
 #[tokio::main]
 async fn main() {
@@ -43,14 +46,21 @@ async fn main() {
 fn create_app<T: TodoRepository>(repository: T) -> Router {
     Router::new()
         .route("/", get(root))
-        .route("/todos", post(create_todo::<T>).get(all_todo::<T>))
         .route(
-            "/todos/:id",
-            get(find_todo::<T>)
-                .delete(delete_todo::<T>)
-                .patch(update_todo::<T>),
-        )
+            "/todos",
+            post(create_todo::<T>)
+                .patch(update_todo::<T>)
+                .get(all_todo::<T>),
+            )
+        .route(
+            "/todos/:id", get(find_todo::<T>).delete(delete_todo::<T>))
         .layer(Extension(Arc::new(repository)))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Origin::exact("http://localhost:3001".parse().unwrap()))
+                .allow_methods(Any)
+                .allow_headers(vec![CONTENT_TYPE])
+        )
 }
 
 async fn root() -> &'static str {
@@ -190,5 +200,3 @@ mod test {
         assert_eq!(StatusCode::NO_CONTENT, res.status());
     }
 }
-
-// 2023/1/7　~P183上部までOK

@@ -1,26 +1,48 @@
-import { useState, FC } from 'react'
+import { useEffect, useState, FC } from 'react'
 import 'modern-css-reset'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { Box, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { NewTodoPayload, Todo } from './types/todo'
+import TodoList from './components/TodoList'
 import TodoForm from './components/TodoForm'
+import { addTodoItem, getTodoItems } from './lib/api/todo'
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([])
-  const createId = () => todos.length + 1
+  // const createId = () => todos.length + 1
 
 // point 1
   const onSubmit  = async (payload: NewTodoPayload) => {
     if (!payload.text) return
-    setTodos((prev) => [
-      {
-        id: createId(),
-        text: payload.text,
-        completed: false,
-      },
-      ...prev,
-    ])
+
+    // const newTodo = await addTodoItem(payload)
+    // setTodos((prev) => [newTodo, ...prev])
+    await addTodoItem(payload)
+    // APIからデータを取得
+    const todos = await getTodoItems()
+    setTodos(todos)
   }
+
+  const onUpdate = (updateTodo: Todo) => {
+    setTodos(
+      todos.map((todo) => {
+        if (todo.id === updateTodo.id) {
+          return {
+            ...todo,
+            ...updateTodo,
+        }
+      }
+      return todo
+      })
+    )
+  }
+
+  useEffect(() => {
+    ;(async () => {
+      const todos = await getTodoItems()
+      setTodos(todos)
+    })()
+  }, [])
 
   // point 2
   return (
@@ -50,7 +72,10 @@ const TodoApp: FC = () => {
       }}
     >
       <Box maxWidth={700} width="100%">
+        <Stack spacing={5}>
         <TodoForm onSubmit={onSubmit} />
+        <TodoList todos = {todos} onUpdate={onUpdate} />
+        </Stack>
       </Box>
     </Box>
   </>
